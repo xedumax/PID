@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="dawi">
+	
+	<!-- 
+			id : llave primaria
+			result: columna
+			asociation: llave foranea
+			property: los atributos
+			column: columnas de la BD
+			select: es el id del SQL que va traer y llenar la prioridad
+	 -->
+	 
+	<!-- otro recurso es mapear toda la base de datos a resultmap -->
+	<resultMap  id="mapPais" type="paisBeanIbatis">
+		<id property="idPais" column="idPais"/>	
+		<result property="nombre" column="nombre"/>	
+	</resultMap>
+	
+	
+	<resultMap  id="mapUbigeo" type="UbigeoBeanIbatis">
+		<id property="idUbigeo" column="id"/>	
+		<result property="departamento" column="departamento"/>
+		<result property="provincia" column="provincia"/>	
+		<result property="distrito" column="distrito"/>		
+	</resultMap>
+	
+	
+	
+
+	
+	<resultMap  id="mapAviso" type="avisoBeanIbatis">
+		<id property="idAviso" column="idAviso"/>	
+		<result property="descripcion" column="descripcion"/>	
+		<result property="precio" column="precio"/>
+		<association property="pais" column="idPais" select="SQL_consultaPais"/>
+	</resultMap>
+
+	<select id="SQL_consultaPais" resultMap="mapPais">
+		select * from pais where idPais =  #{idPais}
+	</select>
+	<insert id="SQL_insertaAviso"   parameterType="avisoBeanIbatis" >
+		insert into aviso values(null,#{descripcion},#{precio},#{idPais})
+	</insert>
+	<select id="SQL_listaPais" resultMap="mapPais">
+			select * from pais
+	</select>
+	<select id="SQL_listaAviso" resultMap="mapAviso">
+			select * from aviso
+	</select>	 
+	
+	<!-- PASO 2) Se registran las sentencias SQL -->
+	
+	
+	<select id="SQL_listaUsuario" resultType="usuarioBeanIbatis">
+				select
+						idUsuario as idUsuario,
+						email as email,
+						pass as password,
+						nombre as nombre,
+						apellido as apellido,
+						sexo as sexo,
+						status as status,
+						fecha as fecha
+				from
+					usuario		
+	</select>
+	
+	<select id="SQL_usuarioPorPK" parameterType="int" resultType="usuarioBeanIbatis">
+				select
+						idUsuario as idUsuario,
+						fotos as fotosBytes
+				from
+					usuario
+				where
+					idUsuario = #{id}			
+	</select>
+	
+	<insert id="SQL_insertaUsuario" parameterType="usuarioBeanIbatis">
+		insert into usuario values(null,
+								   #{email},
+								   #{password},
+								   #{nombre},
+								   #{apellido},
+								   #{sexo},
+								   #{status},
+								   #{fotosBytes},
+								   #{fecha},
+								   #{idUbigeo})
+	</insert>	
+	
+	<!-- CRUD de concurso -->
+	
+	<insert id="SQL_insertaConcurso" parameterType="concursoBeanIbatis">
+			INSERT INTO CONCURSO VALUES(null,
+			#{nombre},#{fechaInicio},#{fechaFin},#{estado})
+	</insert>
+	
+	<update id="SQL_actualizaConcurso" parameterType="concursoBeanIbatis">
+			UPDATE CONCURSO SET nombre = #{nombre},
+			fechaInicio = #{fechaInicio},fechaFin = #{fechaFin},estado = #{estado}
+			where idConcurso = #{idConcurso}
+	</update>
+	
+	<select id="SQL_consultaConcurso" parameterType="java.lang.String" 
+									  resultType="concursoBeanIbatis">
+			SELECT idConcurso as idConcurso,nombre as nombre,
+				   fechaInicio as fechaInicio,fechaFin as fechaFin, estado as estado
+			from concurso where nombre like #{filtro}
+				 	
+	</select>
+	
+	<!-- Consulta -->
+	
+	<delete id="SQL_eliminaAviso" parameterType="int" >
+		delete from aviso where idAviso = #{idAviso}
+	</delete>
+	
+	<select   id="SQL_consultaAviso" parameterType="filtroBeanIbatis" resultType="filtroBeanIbatis">
+		SELECT a.idAviso as idAviso,
+			   a.descripcion as nombre,
+			   a.precio as precio,
+			   p.nombre as pais
+		FROM aviso a inner join pais p on a.idPais = p.idPais
+		<where>
+			<if test="pais != -1">
+				a.idPais = #{pais}
+			</if>
+			<if test="nombre != '' ">
+				and a.descripcion like #{nombre}
+			</if>
+		</where>
+	</select>
+	
+	
+	<select id="SQL_listaDepartamentos" parameterType="java.lang.String" 
+									  resultType="UbigeoBeanIbatis">
+			select  distinct departamento from ubigeo
+				 	
+	</select>
+	
+	<select id="SQL_listaProvincias"    resultMap="mapUbigeo">
+			select  distinct provincia from ubigeo where departamento=#{idDepartamento}
+				 	
+	</select>
+	
+	<select id="SQL_listaDistritos" resultMap="mapUbigeo">
+			select  distinct id,distrito from ubigeo where  departamento =#{idDepartamento} and provincia=#{idProvincia}
+				 	
+	</select>
+	
+	
+	
+		<update id="SQL_actualizaUsuario" parameterType="usuarioBeanIbatis">
+			UPDATE CONCURSO SET email =  #{email},
+			nombre =  #{nombre},apellido = #{apellido},
+			sexo=#{sexo},fotoBytes=#{fotosBytes},fecha=#{fecha}
+			where idUsuario = #{idUsuario}
+			
+			
+			
+			(null,
+								   #{email},
+								 
+								   #{nombre},
+								   #{apellido},
+								   #{sexo},
+								   #{fotosBytes},
+								  
+								   #{fecha})
+	</update>
+	
+	
+	<select id="SQL_consultaUsuario" parameterType="java.lang.String" 
+									  resultType="UsuarioBeanIbatis">
+			SELECT email as email,nombre as nombre,
+				   apellido as apellido, sexo as sexo,fecha as fecha
+			from usuario where nombre like #{filtro}
+				
+	</select>		
+	
+	<select id="SQL_obtenerIdUbigeo" parameterType="java.lang.String" 
+									  resultType="UbigeoBeanIbatis">
+			SELECT id  as idUbigeo FROM ubigeo 
+			where departamento=#{departamento} and provincia=#{provincia} and distrito=#{distrito}
+				
+	</select>	
+	
+	
+	
+	
+	
+	
+</mapper>
+
+
+
+
+
+
